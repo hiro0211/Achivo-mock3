@@ -117,28 +117,6 @@ export function GoalChatInterface({ userId }: GoalChatInterfaceProps) {
         <CardTitle className="text-lg font-medium">
           目標設定アシスタント
         </CardTitle>
-        {/* <div className="grid grid-cols-2 gap-4 mt-2">
-          <div>
-            <Label htmlFor="userName">あなたの名前</Label>
-            <Input
-              id="userName"
-              value={userName}
-              onChange={(e) => setUserName(e.target.value)}
-              placeholder="名前を入力..."
-              className="mt-1"
-            />
-          </div>
-          <div>
-            <Label htmlFor="idealFuture">理想の未来</Label>
-            <Input
-              id="idealFuture"
-              value={idealFuture}
-              onChange={(e) => setIdealFuture(e.target.value)}
-              placeholder="理想の未来を入力..."
-              className="mt-1"
-            />
-          </div>
-        </div> */}
       </CardHeader>
       <CardContent className="flex-1 overflow-hidden p-0 flex flex-col">
         <ScrollArea className="flex-1 p-4">

@@ -54,7 +54,7 @@ export default function LoginForm() {
     setError("");
 
     try {
-      const { error: signInError, data } = await supabase.auth.signInWithOAuth({
+      const { error: signInError } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
           redirectTo: `${window.location.origin}/api/auth/callback`,
@@ -64,9 +64,6 @@ export default function LoginForm() {
       if (signInError) {
         setError("Googleログイン中にエラーが発生しました。もう一度お試しください。");
         setLoading(false);
-      } else if (data.session) {
-        router.push("/dashboard");
-        router.refresh();
       }
     } catch (error) {
       setError("Googleログイン中にエラーが発生しました。もう一度お試しください。");

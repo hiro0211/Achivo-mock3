@@ -8,6 +8,18 @@ import { ChatInput } from "./chat-input";
 import { Message, DifyInput } from "./types";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast";
+import {
+  sendMessage,
+  checkConversationCompletion,
+  saveGoalsToDatabase,
+} from "@/lib/api/chat";
+import {
+  showSuccessMessage,
+  showMissingVariablesMessage,
+  showErrorMessage,
+} from "@/lib/api/notification";
+
 
 interface GoalChatInterfaceProps {
   userId: string;
@@ -28,11 +40,25 @@ export function GoalChatInterface({ userId }: GoalChatInterfaceProps) {
   const [idealFuture, setIdealFuture] = useState("");
   const [conversationId, setConversationId] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isComplete, setIsComplete] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const { toast } = useToast();
 
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  useEffect(() => {
+    // 例: Cookie取得時にSupabaseのCookie名だけを対象にする
+    const supabaseCookie = document.cookie
+      .split(";")
+      .map((c) => c.trim())
+      .find((c) => c.startsWith("sb-") && c.includes("-auth-token"));
+
+    if (supabaseCookie) {
+      // 既存のパース処理
+    }
+  }, []);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -53,31 +79,14 @@ export function GoalChatInterface({ userId }: GoalChatInterfaceProps) {
     setIsLoading(true);
 
     try {
-      // サーバーエンドポイント経由でDify APIと通信
+      // 入力を準備
       const inputs: DifyInput = {
         user_name: userName,
         ideal_future: idealFuture,
       };
 
-      const response = await fetch("/api/dify", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          query: content,
-          conversationId,
-          userId,
-          inputs,
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "APIリクエストエラー");
-      }
-
-      const data = await response.json();
+      // lib/api/chat の関数を使用してメッセージを送信
+      const data = await sendMessage(content, userId, conversationId, inputs);
 
       if (data.conversation_id && !conversationId) {
         setConversationId(data.conversation_id);
@@ -92,6 +101,23 @@ export function GoalChatInterface({ userId }: GoalChatInterfaceProps) {
         userId: "ai",
       };
       setMessages((prev) => [...prev, aiMessage]);
+
+      // 会話完了状態を確認
+      const completionResult = await checkConversationCompletion(
+        conversationId,
+        userId
+      );
+
+      if (completionResult.isComplete) {
+        // 目標を保存
+        await saveGoalsToDatabase(userId, conversationId);
+        setIsComplete(true);
+        // 成功メッセージを表示
+        showSuccessMessage("目標が保存されました");
+      } else {
+        // 不足している情報を表示
+        showMissingVariablesMessage(completionResult.missingVariables);
+      }
     } catch (error) {
       console.error("メッセージ送信エラー:", error);
 
@@ -104,6 +130,11 @@ export function GoalChatInterface({ userId }: GoalChatInterfaceProps) {
         userId: "system",
       };
       setMessages((prev) => [...prev, errorMessage]);
+
+      // エラーメッセージをトーストで表示
+      showErrorMessage(
+        error instanceof Error ? error.message : "不明なエラーが発生しました"
+      );
     } finally {
       setIsLoading(false);
       scrollToBottom();
