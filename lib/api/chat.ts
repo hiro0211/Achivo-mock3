@@ -3,8 +3,8 @@
  */
 async function apiFetch<T>(path: string, body: object): Promise<T> {
   const res = await fetch(path, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
   if (!res.ok) {
@@ -25,7 +25,7 @@ export function sendMessage(
   conversationId: string,
   inputs: DifyInput = {}
 ) {
-  return apiFetch('/api/dify', { query, userId, conversationId, inputs });
+  return apiFetch("/api/dify", { query, userId, conversationId, inputs });
 }
 
 /**
@@ -35,15 +35,12 @@ export function checkConversationCompletion(
   conversationId: string,
   userId: string
 ) {
-  return apiFetch('/api/dify/check-completion', { conversationId, userId });
+  return apiFetch("/api/dify/check-completion", { conversationId, userId });
 }
 
 /**
  * 目標保存 API 呼び出し
  */
-export function saveGoalsToDatabase(
-  userId: string,
-  conversationId: string
-) {
-  return apiFetch('/api/save-goals', { userId, conversationId });
+export function saveGoalsToDatabase(userId: string, conversationId: string) {
+  return apiFetch("/api/save-goals", { userId, conversationId });
 }

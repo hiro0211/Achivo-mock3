@@ -8,6 +8,7 @@ import { sendMessage } from "./chat";
 // supabaseServerをgetServiceSupabase()に変更
 const supabaseServer = getServiceSupabase();
 
+// Difyの会話変数を取得し、supabaseに各目標を保存する関数
 export async function saveGoals(userId: string, conversationId: string) {
   try {
     console.log("目標保存開始:", { userId, conversationId });

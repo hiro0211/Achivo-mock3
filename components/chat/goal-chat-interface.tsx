@@ -20,7 +20,6 @@ import {
   showErrorMessage,
 } from "@/lib/api/notification";
 
-
 interface GoalChatInterfaceProps {
   userId: string;
 }
@@ -88,10 +87,6 @@ export function GoalChatInterface({ userId }: GoalChatInterfaceProps) {
       // lib/api/chat の関数を使用してメッセージを送信
       const data = await sendMessage(content, userId, conversationId, inputs);
 
-      if (data.conversation_id && !conversationId) {
-        setConversationId(data.conversation_id);
-      }
-
       // AIの応答を追加
       const aiMessage: Message = {
         id: data.message_id || `ai-${Date.now()}`,
@@ -102,21 +97,26 @@ export function GoalChatInterface({ userId }: GoalChatInterfaceProps) {
       };
       setMessages((prev) => [...prev, aiMessage]);
 
-      // 会話完了状態を確認
-      const completionResult = await checkConversationCompletion(
-        conversationId,
-        userId
-      );
+      // 重要: ここで新しい会話IDを取得したらそれを使用する
+      if (data.conversation_id) {
+        // 状態を更新（これは非同期なので後続の処理ではまだ反映されていない）
+        setConversationId(data.conversation_id);
 
-      if (completionResult.isComplete) {
-        // 目標を保存
-        await saveGoalsToDatabase(userId, conversationId);
-        setIsComplete(true);
-        // 成功メッセージを表示
-        showSuccessMessage("目標が保存されました");
-      } else {
-        // 不足している情報を表示
-        showMissingVariablesMessage(completionResult.missingVariables);
+        // 新しく取得したIDを直接使用して会話完了チェック
+        const completionResult = await checkConversationCompletion(
+          data.conversation_id, // ここで直接data.conversation_idを使用
+          userId
+        );
+
+        if (completionResult.isComplete) {
+          // 目標を保存 - こちらも新しいIDを使用
+          await saveGoalsToDatabase(userId, data.conversation_id);
+          setIsComplete(true);
+          showSuccessMessage("目標が保存されました");
+        } else {
+          // 不足している情報を表示
+          showMissingVariablesMessage(completionResult.missingVariables);
+        }
       }
     } catch (error) {
       console.error("メッセージ送信エラー:", error);
