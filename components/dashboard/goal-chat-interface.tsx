@@ -8,9 +8,25 @@ import { ChatInput } from "./chat-input";
 import { Message, DifyInput } from "@/types";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast";
+import {
+  sendMessage,
+  checkConversationCompletion,
+  saveGoalsToDatabase,
+} from "@/lib/api/chat";
+import {
+  showSuccessMessage,
+  showMissingVariablesMessage,
+  showErrorMessage,
+} from "@/lib/api/notification";
 
 interface GoalChatInterfaceProps {
   userId: string;
+}
+
+interface CompletionResult {
+  isComplete: boolean;
+  missingVariables: string[];
 }
 
 export function GoalChatInterface({ userId }: GoalChatInterfaceProps) {
@@ -24,11 +40,13 @@ export function GoalChatInterface({ userId }: GoalChatInterfaceProps) {
       userId: "system",
     },
   ]);
-  const [userName, setUserName] = useState("");
-  const [idealFuture, setIdealFuture] = useState("");
+  // const [userName, setUserName] = useState("");
+  // const [idealFuture, setIdealFuture] = useState("");
   const [conversationId, setConversationId] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isComplete, setIsComplete] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const { toast } = useToast();
 
   useEffect(() => {
     scrollToBottom();
@@ -41,6 +59,7 @@ export function GoalChatInterface({ userId }: GoalChatInterfaceProps) {
   const handleSendMessage = async (content: string) => {
     if (!content.trim() || isLoading) return;
 
+    console.log("内容は", content);
     // ユーザーメッセージを追加
     const userMessage: Message = {
       id: `user-${Date.now()}`,
@@ -53,36 +72,24 @@ export function GoalChatInterface({ userId }: GoalChatInterfaceProps) {
     setIsLoading(true);
 
     try {
-      // サーバーエンドポイント経由でDify APIと通信
+      // 入力を準備
       const inputs: DifyInput = {
-        user_name: userName,
-        ideal_future: idealFuture,
+        // user_name: userName,
+        // ideal_future: idealFuture,
       };
 
-      // サーバーエンドポイント経由でDify APIと通信
-      const response = await fetch("/api/dify", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          query: content,
-          conversationId,
-          userId,
-          inputs,
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "APIリクエストエラー");
-      }
-
-      const data = await response.json();
-
-      if (data.conversation_id && !conversationId) {
-        setConversationId(data.conversation_id);
-      }
+      // lib/api/chat の関数を使用してメッセージを送信
+      const data = (await sendMessage(
+        content,
+        userId,
+        conversationId,
+        inputs
+      )) as {
+        message_id: string;
+        answer: string;
+        created_at: string;
+        conversation_id: string;
+      };
 
       // AIの応答を追加
       const aiMessage: Message = {
@@ -93,6 +100,28 @@ export function GoalChatInterface({ userId }: GoalChatInterfaceProps) {
         userId: "ai",
       };
       setMessages((prev) => [...prev, aiMessage]);
+
+      // 重要: ここで新しい会話IDを取得したらそれを使用する
+      if (data.conversation_id) {
+        // 状態を更新（これは非同期なので後続の処理ではまだ反映されていない）
+        setConversationId(data.conversation_id);
+
+        // 新しく取得したIDを直接使用して会話完了チェック
+        const completionResult = (await checkConversationCompletion(
+          data.conversation_id,
+          userId
+        )) as CompletionResult;
+
+        if (completionResult.isComplete) {
+          // 目標を保存 - こちらも新しいIDを使用
+          await saveGoalsToDatabase(userId, data.conversation_id);
+          setIsComplete(true);
+          showSuccessMessage("目標が保存されました");
+        } else {
+          // 不足している情報を表示
+          showMissingVariablesMessage(completionResult.missingVariables);
+        }
+      }
     } catch (error) {
       console.error("メッセージ送信エラー:", error);
 
@@ -105,6 +134,11 @@ export function GoalChatInterface({ userId }: GoalChatInterfaceProps) {
         userId: "system",
       };
       setMessages((prev) => [...prev, errorMessage]);
+
+      // エラーメッセージをトーストで表示
+      showErrorMessage(
+        error instanceof Error ? error.message : "不明なエラーが発生しました"
+      );
     } finally {
       setIsLoading(false);
       scrollToBottom();

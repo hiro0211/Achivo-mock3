@@ -2,7 +2,7 @@ export type DifyInput = Record<string, any>;
 
 export class DifyClient {
   private apiKey: string;
-  private baseUrl = 'https://api.dify.ai/v1';
+  public baseUrl = 'https://api.dify.ai/v1';
 
   constructor(apiKey: string) {
     this.apiKey = apiKey;

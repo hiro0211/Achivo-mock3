@@ -5,7 +5,7 @@ import { difyClient } from "@/lib/api/dify-client";
 export async function POST(req: NextRequest) {
   try {
     const { conversationId, userId } = await req.json();
-    
+
     // conversationIdが空の場合はエラー
     if (!conversationId) {
       return NextResponse.json(
@@ -13,12 +13,14 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       );
     }
-    
+
     const result = await difyClient.checkVariablesComplete({
       conversationId,
       userId,
     });
-    
+
+    console.log("会話完了チェック結果:", JSON.stringify(result, null, 2));
+
     return NextResponse.json(result);
   } catch (error) {
     console.error("会話完了チェックエラー:", error);

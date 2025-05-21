@@ -4,6 +4,7 @@ import {
   getServiceSupabase,
 } from "../supabase-server";
 import { sendMessage } from "./chat";
+import { difyClient } from "@/lib/api/dify-client";
 
 // supabaseServerをgetServiceSupabase()に変更
 const supabaseServer = getServiceSupabase();
@@ -13,17 +14,26 @@ export async function saveGoals(userId: string, conversationId: string) {
   try {
     console.log("目標保存開始:", { userId, conversationId });
 
-    // 1. Difyから会話変数を取得（/api/dify/check-completionを使用）
-    const completionResult = await fetch("/api/dify/check-completion", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ conversationId, userId }),
-    }).then((res) => res.json());
+    // difyClientを直接使用して変数を取得
+    const response = await difyClient.checkVariablesComplete({
+      conversationId,
+      userId,
+    });
 
-    const variables = completionResult.variables || [];
+    // DifyのAPIから直接変数を取得
+    const variablesResponse = await fetch(
+      `${difyClient.baseUrl}/conversations/${conversationId}/variables?user=${userId}`,
+      {
+        headers: {
+          Authorization: `Bearer ${process.env.DIFY_API_KEY}`,
+        },
+      }
+    );
+    const { data: variables } = await variablesResponse.json();
+
     console.log("取得した変数:", variables);
 
-    // 2. 変数を抽出
+    //  変数を抽出
     const getVar = (name: string) =>
       variables.find((v: any) => v.name === name)?.value;
 
