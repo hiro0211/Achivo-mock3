@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useSupabase } from "@/app/components/SupabaseProvider";
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
-import { GoalChatInterface } from "@/components/chat/goal-chat-interface";
+import { GoalChatInterface } from "@/components/dashboard/goal-chat-interface";
+import type { User } from "@supabase/supabase-js";
 
 // クライアントサイドでログアウトするためのフック
 export function useLogout() {
@@ -32,39 +33,64 @@ export function useLogout() {
 // ユーザー情報を取得するためのフック
 export function useUser() {
   const supabase = useSupabase();
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [initialized, setInitialized] = useState(false);
 
   useEffect(() => {
-    const fetchUser = async () => {
+    let isMounted = true;
+
+    const initializeAuth = async () => {
       try {
+        // 最初にセッションを確認
         const {
-          data: { user: currentUser },
-        } = await supabase.auth.getUser();
-        setUser(currentUser);
+          data: { session },
+          error,
+        } = await supabase.auth.getSession();
+
+        if (error) {
+          console.error("セッション取得エラー:", error);
+        }
+
+        if (isMounted) {
+          setUser(session?.user || null);
+          setLoading(false);
+          setInitialized(true);
+        }
       } catch (error) {
-        console.error("ユーザー情報の取得中にエラーが発生しました:", error);
-        setUser(null);
-      } finally {
-        setLoading(false);
+        console.error("認証初期化エラー:", error);
+        if (isMounted) {
+          setUser(null);
+          setLoading(false);
+          setInitialized(true);
+        }
       }
     };
 
-    fetchUser();
+    initializeAuth();
 
-    // セッション変更を監視
+    // 認証状態の変更を監視
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(
-      (_event: string, session: { user?: { id: string } } | null) => {
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log("認証状態変更:", { event, hasSession: !!session });
+
+      if (isMounted) {
         setUser(session?.user || null);
+
+        // 初期化が完了していない場合は完了させる
+        if (!initialized) {
+          setLoading(false);
+          setInitialized(true);
+        }
       }
-    );
+    });
 
     return () => {
+      isMounted = false;
       subscription.unsubscribe();
     };
-  }, [supabase]);
+  }, [supabase, initialized]);
 
   return { user, loading };
 }

@@ -5,50 +5,23 @@ import { usePathname, useRouter } from "next/navigation";
 import { ThemeToggle } from "./theme-toggle";
 import { NAV_ITEMS } from "@/constants/navigation";
 import { Button } from "@/components/ui/button";
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
-import { useEffect, useState } from "react";
+import { useUser, useLogout } from "@/lib/auth-utils";
+import { Loader2 } from "lucide-react";
 
 export function Header() {
   const pathname = usePathname();
   const router = useRouter();
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const supabase = createClientComponentClient();
-
-  useEffect(() => {
-    const checkSession = async () => {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      setIsLoggedIn(!!session);
-    };
-
-    checkSession();
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session) {
-        setIsLoggedIn(true);
-      } else {
-        setIsLoggedIn(false);
-        router.push("/login");
-      }
-    });
-
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, []);
-
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    router.push("/login");
-  };
+  const { user, loading: userLoading } = useUser();
+  const { logout, loading: logoutLoading } = useLogout();
 
   // Get the current page title based on the pathname
   const getPageTitle = () => {
     const currentItem = NAV_ITEMS.find((item) => item.href === pathname);
     return currentItem ? currentItem.title : "Dashboard";
+  };
+
+  const handleLogin = () => {
+    router.push("/login");
   };
 
   return (
@@ -57,12 +30,24 @@ export function Header() {
         <h1 className="text-xl font-semibold">{getPageTitle()}</h1>
         <div className="flex items-center space-x-2">
           <ThemeToggle />
-          {isLoggedIn ? (
-            <Button variant="ghost" onClick={handleLogout}>
-              ログアウト
+          {userLoading ? (
+            <Button variant="ghost" disabled>
+              <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              読み込み中...
+            </Button>
+          ) : user ? (
+            <Button variant="ghost" onClick={logout} disabled={logoutLoading}>
+              {logoutLoading ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  ログアウト中...
+                </>
+              ) : (
+                "ログアウト"
+              )}
             </Button>
           ) : (
-            <Button variant="ghost" onClick={() => router.push("/login")}>
+            <Button variant="ghost" onClick={handleLogin}>
               ログイン
             </Button>
           )}
