@@ -6,7 +6,7 @@ import { GoalData } from "@/types/goal-data";
 import {
   getUserGoals,
   checkUserHasGoals,
-} from "@/lib/supabase/goal-data-service";
+} from "@/lib/repositories/goal-repository";
 import { useUser } from "@/lib/auth-utils";
 
 export function GoalsGrid() {

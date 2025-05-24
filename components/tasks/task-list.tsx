@@ -6,7 +6,10 @@ import { TaskItem } from "./task-item";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Plus, Loader2 } from "lucide-react";
-import { getUserTasks, updateTaskCompletion } from "@/lib/task/task-service";
+import {
+  getUserTasks,
+  updateTaskCompletion,
+} from "@/lib/repositories/task-repository";
 import { getBrowserSupabaseClient } from "@/lib/supabase/browser-client";
 
 export function TaskList() {

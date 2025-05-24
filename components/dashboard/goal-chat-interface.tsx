@@ -5,15 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ChatMessage } from "./chat-message";
 import { ChatInput } from "./chat-input";
-import { Message, DifyInput } from "@/types";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Message } from "@/types";
 import { useToast } from "@/hooks/use-toast";
-import {
-  sendMessage,
-  checkConversationCompletion,
-  saveGoalsToDatabase,
-} from "@/lib/api/chat";
 import {
   showSuccessMessage,
   showMissingVariablesMessage,
@@ -22,11 +15,6 @@ import {
 
 interface GoalChatInterfaceProps {
   userId: string;
-}
-
-interface CompletionResult {
-  isComplete: boolean;
-  missingVariables: string[];
 }
 
 export function GoalChatInterface({ userId }: GoalChatInterfaceProps) {
@@ -40,8 +28,6 @@ export function GoalChatInterface({ userId }: GoalChatInterfaceProps) {
       userId: "system",
     },
   ]);
-  // const [userName, setUserName] = useState("");
-  // const [idealFuture, setIdealFuture] = useState("");
   const [conversationId, setConversationId] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isComplete, setIsComplete] = useState(false);
@@ -59,7 +45,6 @@ export function GoalChatInterface({ userId }: GoalChatInterfaceProps) {
   const handleSendMessage = async (content: string) => {
     if (!content.trim() || isLoading) return;
 
-    console.log("内容は", content);
     // ユーザーメッセージを追加
     const userMessage: Message = {
       id: `user-${Date.now()}`,
@@ -72,60 +57,52 @@ export function GoalChatInterface({ userId }: GoalChatInterfaceProps) {
     setIsLoading(true);
 
     try {
-      // 入力を準備
-      const inputs: DifyInput = {
-        // user_name: userName,
-        // ideal_future: idealFuture,
-      };
+      // API Route経由でサービスを呼び出し
+      const response = await fetch("/api/goal-chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          content,
+          userId,
+          conversationId,
+          inputs: {},
+        }),
+      });
 
-      // lib/api/chat の関数を使用してメッセージを送信
-      const data = (await sendMessage(
-        content,
-        userId,
-        conversationId,
-        inputs
-      )) as {
-        message_id: string;
-        answer: string;
-        created_at: string;
-        conversation_id: string;
-      };
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "API呼び出しに失敗しました");
+      }
+
+      const result = await response.json();
 
       // AIの応答を追加
       const aiMessage: Message = {
-        id: data.message_id || `ai-${Date.now()}`,
-        content: data.answer,
+        id: result.response.message_id || `ai-${Date.now()}`,
+        content: result.response.answer,
         sender: "ai",
-        timestamp: new Date(data.created_at) || new Date(),
+        timestamp: new Date(result.response.created_at) || new Date(),
         userId: "ai",
       };
       setMessages((prev) => [...prev, aiMessage]);
 
-      // 重要: ここで新しい会話IDを取得したらそれを使用する
-      if (data.conversation_id) {
-        // 状態を更新（これは非同期なので後続の処理ではまだ反映されていない）
-        setConversationId(data.conversation_id);
+      // 会話IDを更新
+      if (result.response.conversation_id) {
+        setConversationId(result.response.conversation_id);
+      }
 
-        // 新しく取得したIDを直接使用して会話完了チェック
-        const completionResult = (await checkConversationCompletion(
-          data.conversation_id,
-          userId
-        )) as CompletionResult;
-
-        if (completionResult.isComplete) {
-          // 目標を保存 - こちらも新しいIDを使用
-          await saveGoalsToDatabase(userId, data.conversation_id);
-          setIsComplete(true);
-          showSuccessMessage("目標が保存されました");
-        } else {
-          // 不足している情報を表示
-          showMissingVariablesMessage(completionResult.missingVariables);
-        }
+      // 完了状態に応じて処理
+      if (result.isComplete) {
+        setIsComplete(true);
+        showSuccessMessage("目標が保存されました");
+      } else {
+        showMissingVariablesMessage(result.missingVariables);
       }
     } catch (error) {
       console.error("メッセージ送信エラー:", error);
 
-      // エラーメッセージを表示
       const errorMessage: Message = {
         id: `error-${Date.now()}`,
         content: "申し訳ありません。メッセージの送信中にエラーが発生しました。",
@@ -135,7 +112,6 @@ export function GoalChatInterface({ userId }: GoalChatInterfaceProps) {
       };
       setMessages((prev) => [...prev, errorMessage]);
 
-      // エラーメッセージをトーストで表示
       showErrorMessage(
         error instanceof Error ? error.message : "不明なエラーが発生しました"
       );
