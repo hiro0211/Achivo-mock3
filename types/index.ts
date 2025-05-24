@@ -69,3 +69,6 @@ export interface DifyInput {
   user_name?: string;
   ideal_future?: string;
 }
+
+// Goal data types moved to ./goal-data.ts
+export * from "./goal-data";
