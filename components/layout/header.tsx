@@ -5,13 +5,13 @@ import { usePathname, useRouter } from "next/navigation";
 import { ThemeToggle } from "./theme-toggle";
 import { NAV_ITEMS } from "@/constants/navigation";
 import { Button } from "@/components/ui/button";
-import { useUser, useLogout } from "@/lib/auth-utils";
+import { useAuth, useLogout } from "@/lib/hooks/use-auth";
 import { Loader2 } from "lucide-react";
 
 export function Header() {
   const pathname = usePathname();
   const router = useRouter();
-  const { user, loading: userLoading } = useUser();
+  const { user, loading: userLoading } = useAuth();
   const { logout, loading: logoutLoading } = useLogout();
 
   // Get the current page title based on the pathname

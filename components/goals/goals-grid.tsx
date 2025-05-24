@@ -7,10 +7,10 @@ import {
   getUserGoals,
   checkUserHasGoals,
 } from "@/lib/repositories/goal-repository";
-import { useUser } from "@/lib/auth-utils";
+import { useAuth } from "@/lib/hooks/use-auth";
 
 export function GoalsGrid() {
-  const { user, loading: userLoading } = useUser();
+  const { user, loading: userLoading } = useAuth();
   const [goalData, setGoalData] = useState<GoalData | null>(null);
   const [loading, setLoading] = useState(true);
   const [hasGoals, setHasGoals] = useState(false);

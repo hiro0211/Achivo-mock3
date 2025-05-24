@@ -1,7 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { useSupabase } from "@/app/components/SupabaseProvider";
+import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
+import { GoalChatInterface } from "@/components/dashboard/goal-chat-interface";
 import type { User } from "@supabase/supabase-js";
 
 export function useAuth() {
@@ -54,4 +57,50 @@ export function useAuth() {
     loading,
     isAuthenticated: !!user,
   };
+}
+
+export function useLogout() {
+  const router = useRouter();
+  const supabase = useSupabase();
+  const [loading, setLoading] = useState(false);
+
+  const logout = async () => {
+    setLoading(true);
+    try {
+      await supabase.auth.signOut();
+      router.push("/login");
+      router.refresh();
+    } catch (error) {
+      console.error("ログアウト中にエラーが発生しました:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return { logout, loading };
+}
+
+// GoalChatInterfaceWrapper - 認証が必要なコンポーネント用
+export function useUserId() {
+  const { user, loading } = useAuth();
+  return {
+    userId: user?.id ?? null,
+    loading,
+  };
+}
+export function GoalChatInterfaceWrapper() {
+  const [userId, setUserId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const supabase = createClientComponentClient();
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      setUserId(user?.id ?? null);
+    });
+  }, []);
+
+  if (!userId) {
+    return <div>Loading...</div>;
+  }
+
+  return <GoalChatInterface userId={userId} />;
 }
