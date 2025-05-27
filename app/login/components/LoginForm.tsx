@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { FaGoogle } from "react-icons/fa";
 import { FiMail, FiLock } from "react-icons/fi";
 import { useSupabase } from "@/app/components/SupabaseProvider";
+import { getBaseUrl } from "@/lib/utils/url";
 
 export default function LoginForm() {
   const [email, setEmail] = useState("");
@@ -17,7 +18,9 @@ export default function LoginForm() {
 
   useEffect(() => {
     const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       if (session) {
         router.push("/dashboard");
       }
@@ -31,13 +34,16 @@ export default function LoginForm() {
     setError("");
 
     try {
-      const { error: signInError, data } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
+      const { error: signInError, data } =
+        await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
 
       if (signInError) {
-        setError("ログインに失敗しました。メールアドレスまたはパスワードが正しくありません。");
+        setError(
+          "ログインに失敗しました。メールアドレスまたはパスワードが正しくありません。"
+        );
       } else if (data.session) {
         router.push("/dashboard");
         router.refresh();
@@ -57,16 +63,20 @@ export default function LoginForm() {
       const { error: signInError } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
-          redirectTo: `${window.location.origin}/api/auth/callback`,
+          redirectTo: `${getBaseUrl()}/api/auth/callback`,
         },
       });
 
       if (signInError) {
-        setError("Googleログイン中にエラーが発生しました。もう一度お試しください。");
+        setError(
+          "Googleログイン中にエラーが発生しました。もう一度お試しください。"
+        );
         setLoading(false);
       }
     } catch (error) {
-      setError("Googleログイン中にエラーが発生しました。もう一度お試しください。");
+      setError(
+        "Googleログイン中にエラーが発生しました。もう一度お試しください。"
+      );
       setLoading(false);
     }
   };
@@ -166,4 +176,4 @@ export default function LoginForm() {
       </div>
     </div>
   );
-} 
+}

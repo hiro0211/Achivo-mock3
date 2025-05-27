@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { FaGoogle } from "react-icons/fa";
 import { FiMail, FiLock, FiUser } from "react-icons/fi";
 import { useSupabase } from "@/app/components/SupabaseProvider";
+import { getBaseUrl } from "@/lib/utils/url";
 
 export default function SignupForm() {
   const [name, setName] = useState("");
@@ -36,19 +37,24 @@ export default function SignupForm() {
 
     try {
       // Step 1: Supabase認証システムにユーザーを登録
-      const { error: signUpError, data: authData } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/api/auth/callback`,
-          data: {
-            name: name, // ユーザーのメタデータに名前を保存
-          }
-        },
-      });
+      const { error: signUpError, data: authData } = await supabase.auth.signUp(
+        {
+          email,
+          password,
+          options: {
+            emailRedirectTo: `${getBaseUrl()}/api/auth/callback`,
+            data: {
+              name: name, // ユーザーのメタデータに名前を保存
+            },
+          },
+        }
+      );
 
       if (signUpError) {
-        setError(signUpError.message || "アカウント作成に失敗しました。もう一度お試しください。");
+        setError(
+          signUpError.message ||
+            "アカウント作成に失敗しました。もう一度お試しください。"
+        );
         return;
       }
 
@@ -56,16 +62,14 @@ export default function SignupForm() {
       if (authData.user) {
         try {
           // テーブルにユーザーデータを挿入
-          const { error: insertError } = await supabase
-            .from('USERS')
-            .insert([
-              {
-                id: authData.user.id, // Supabase Authが生成したUIDを使用
-                name: name,
-                email: email,
-                is_active: true
-              }
-            ]);
+          const { error: insertError } = await supabase.from("USERS").insert([
+            {
+              id: authData.user.id, // Supabase Authが生成したUIDを使用
+              name: name,
+              email: email,
+              is_active: true,
+            },
+          ]);
 
           if (insertError) {
             console.error("USERSテーブルへの登録エラー:", insertError);
@@ -74,7 +78,7 @@ export default function SignupForm() {
               id: authData.user.id,
               name: name,
               email: email,
-              is_active: true
+              is_active: true,
             });
             // テーブル挿入エラーがあっても認証自体は成功しているので、処理を続行
           }
@@ -88,7 +92,9 @@ export default function SignupForm() {
       router.push("/verification?email=" + encodeURIComponent(email));
     } catch (error) {
       console.error("アカウント作成エラー:", error);
-      setError("アカウント作成中にエラーが発生しました。もう一度お試しください。");
+      setError(
+        "アカウント作成中にエラーが発生しました。もう一度お試しください。"
+      );
     } finally {
       setLoading(false);
     }
@@ -100,16 +106,20 @@ export default function SignupForm() {
       const { error: signInError } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
-          redirectTo: `${window.location.origin}/api/auth/callback`,
+          redirectTo: `${getBaseUrl()}/api/auth/callback`,
         },
       });
 
       if (signInError) {
-        setError("Googleログイン中にエラーが発生しました。もう一度お試しください。");
+        setError(
+          "Googleログイン中にエラーが発生しました。もう一度お試しください。"
+        );
         setLoading(false);
       }
     } catch (error) {
-      setError("Googleログイン中にエラーが発生しました。もう一度お試しください。");
+      setError(
+        "Googleログイン中にエラーが発生しました。もう一度お試しください。"
+      );
       setLoading(false);
     }
   };
@@ -194,7 +204,10 @@ export default function SignupForm() {
         </div>
 
         <div className="space-y-2">
-          <label htmlFor="confirm-password" className="block text-sm font-medium">
+          <label
+            htmlFor="confirm-password"
+            className="block text-sm font-medium"
+          >
             パスワード（確認）
           </label>
           <div className="relative">
@@ -251,4 +264,4 @@ export default function SignupForm() {
       </div>
     </div>
   );
-} 
+}
