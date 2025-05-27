@@ -36,15 +36,6 @@ export interface Message {
   userId: string;
 }
 
-export interface SummaryCard {
-  id: string;
-  title: string;
-  content: string;
-  type: "future" | "goal" | "task";
-  progress?: number;
-  userId: string;
-}
-
 export interface ProgressData {
   date: string;
   value: number;
@@ -68,6 +59,15 @@ export type NavItem = {
 export interface DifyInput {
   user_name?: string;
   ideal_future?: string;
+}
+
+export interface SummaryCard {
+  id: string;
+  title: string;
+  content: string;
+  type: "future" | "goal" | "task";
+  progress?: number;
+  userId: string;
 }
 
 // Goal data types moved to ./goal-data.ts

@@ -18,9 +18,9 @@ export function ThemeToggle() {
   return (
     <Button variant="ghost" size="icon" onClick={toggleTheme}>
       {resolvedTheme === "dark" ? (
-        <Moon className="h-[1.2rem] w-[1.2rem] transition-all" />
-      ) : (
         <Sun className="h-[1.2rem] w-[1.2rem] transition-all" />
+      ) : (
+        <Moon className="h-[1.2rem] w-[1.2rem] transition-all" />
       )}
       <span className="sr-only">Toggle theme</span>
     </Button>

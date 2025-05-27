@@ -1,10 +1,11 @@
 "use client";
 
+import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { FiMail, FiArrowLeft } from "react-icons/fi";
 
-export default function VerificationPage() {
+function VerificationContent() {
   const searchParams = useSearchParams();
   const email = searchParams.get("email") || "";
 
@@ -22,7 +23,8 @@ export default function VerificationPage() {
             <p className="text-sm text-gray-500 mt-2">
               {email ? (
                 <>
-                  <span className="font-medium">{email}</span> 宛に確認メールを送信しました
+                  <span className="font-medium">{email}</span>{" "}
+                  宛に確認メールを送信しました
                 </>
               ) : (
                 <>登録したメールアドレス宛に確認メールを送信しました</>
@@ -31,7 +33,9 @@ export default function VerificationPage() {
           </div>
 
           <div className="p-4 bg-blue-50 text-blue-800 rounded-md text-sm">
-            <p>メールに記載されているリンクをクリックして、アカウントを有効化してください。</p>
+            <p>
+              メールに記載されているリンクをクリックして、アカウントを有効化してください。
+            </p>
           </div>
 
           <div className="space-y-4">
@@ -53,4 +57,12 @@ export default function VerificationPage() {
       </div>
     </div>
   );
-} 
+}
+
+export default function VerificationPage() {
+  return (
+    <Suspense>
+      <VerificationContent />
+    </Suspense>
+  );
+}

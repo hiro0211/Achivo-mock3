@@ -7,11 +7,7 @@ import { ChatMessage } from "./chat-message";
 import { ChatInput } from "./chat-input";
 import { Message } from "@/types";
 import { useToast } from "@/hooks/use-toast";
-import {
-  showSuccessMessage,
-  showMissingVariablesMessage,
-  showErrorMessage,
-} from "@/lib/api/notification";
+import { showSuccessMessage, showErrorMessage } from "@/lib/api/notification";
 
 interface GoalChatInterfaceProps {
   userId: string;
@@ -97,9 +93,9 @@ export function GoalChatInterface({ userId }: GoalChatInterfaceProps) {
       if (result.isComplete) {
         setIsComplete(true);
         showSuccessMessage("目標が保存されました");
-      } else {
-        showMissingVariablesMessage(result.missingVariables);
       }
+      // 会話の途中段階では不足変数のアラートは表示しない
+      // （AIとの対話で自然に情報を収集するため）
     } catch (error) {
       console.error("メッセージ送信エラー:", error);
 
