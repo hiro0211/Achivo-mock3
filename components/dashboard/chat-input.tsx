@@ -8,17 +8,19 @@ import { SendHorizontal, Loader2 } from "lucide-react";
 interface ChatInputProps {
   onSendMessage: (message: string) => void;
   isLoading?: boolean;
+  isWaitingForConfirmation?: boolean;
 }
 
 export function ChatInput({
   onSendMessage,
   isLoading = false,
+  isWaitingForConfirmation = false,
 }: ChatInputProps) {
   const [message, setMessage] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!message.trim() || isLoading) return;
+    if (!message.trim() || isLoading || isWaitingForConfirmation) return;
 
     try {
       await onSendMessage(message);
@@ -42,14 +44,18 @@ export function ChatInput({
           value={message}
           onChange={(e) => setMessage(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="メッセージを入力してください..."
+          placeholder={
+            isWaitingForConfirmation
+              ? "上記の内容をご確認の上、OKボタンを押してください"
+              : "メッセージを入力してください..."
+          }
           className="flex-1 min-h-[60px] max-h-[120px]"
-          disabled={isLoading}
+          disabled={isLoading || isWaitingForConfirmation}
         />
         <Button
           type="submit"
           size="icon"
-          disabled={!message.trim() || isLoading}
+          disabled={!message.trim() || isLoading || isWaitingForConfirmation}
           className="h-[60px] w-[60px]"
         >
           {isLoading ? (

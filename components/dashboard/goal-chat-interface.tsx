@@ -81,6 +81,8 @@ export function GoalChatInterface({ userId }: GoalChatInterfaceProps) {
         sender: "ai",
         timestamp: new Date(result.response.created_at) || new Date(),
         userId: "ai",
+        needsConfirmation: isGoalConfirmationMessage(result.response.answer),
+        isConfirmed: false,
       };
       setMessages((prev) => [...prev, aiMessage]);
 
@@ -117,6 +119,38 @@ export function GoalChatInterface({ userId }: GoalChatInterfaceProps) {
     }
   };
 
+  // 目標確認が必要なメッセージかどうかを判定する関数
+  const isGoalConfirmationMessage = (content: string): boolean => {
+    // AIの返信で目標確認を求めるメッセージかどうかを判定
+    const confirmationKeywords = [
+      "確認",
+      "OK",
+      "よろしいでしょうか",
+      "これで進めて",
+      "問題ないでしょうか",
+      "修正があれば",
+    ];
+    return confirmationKeywords.some((keyword) => content.includes(keyword));
+  };
+
+  // OKボタンがクリックされた時の処理
+  const handleConfirmMessage = async (messageId: string) => {
+    // メッセージを確認済みにマーク
+    setMessages((prev) =>
+      prev.map((msg) =>
+        msg.id === messageId ? { ...msg, isConfirmed: true } : msg
+      )
+    );
+
+    // Dify側に「OK」メッセージを送信
+    await handleSendMessage("OK");
+  };
+
+  // 確認待ちの状態を計算
+  const isWaitingForConfirmation = messages.some(
+    (msg) => msg.needsConfirmation && !msg.isConfirmed
+  );
+
   return (
     <Card className="flex flex-col h-[600px]">
       <CardHeader className="py-3 px-4 border-b">
@@ -128,13 +162,21 @@ export function GoalChatInterface({ userId }: GoalChatInterfaceProps) {
         <ScrollArea className="flex-1 p-4">
           <div className="space-y-4">
             {messages.map((message) => (
-              <ChatMessage key={message.id} message={message} />
+              <ChatMessage
+                key={message.id}
+                message={message}
+                onConfirm={handleConfirmMessage}
+              />
             ))}
             <div ref={messagesEndRef} />
           </div>
         </ScrollArea>
         <div className="p-4 border-t">
-          <ChatInput onSendMessage={handleSendMessage} isLoading={isLoading} />
+          <ChatInput
+            onSendMessage={handleSendMessage}
+            isLoading={isLoading}
+            isWaitingForConfirmation={isWaitingForConfirmation}
+          />
         </div>
       </CardContent>
     </Card>

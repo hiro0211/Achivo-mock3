@@ -34,6 +34,8 @@ export interface Message {
   sender: "user" | "ai" | "system" | "error";
   timestamp: Date;
   userId: string;
+  needsConfirmation?: boolean;
+  isConfirmed?: boolean;
 }
 
 export interface ProgressData {
