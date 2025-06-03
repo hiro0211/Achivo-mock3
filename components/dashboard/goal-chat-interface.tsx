@@ -152,15 +152,21 @@ export function GoalChatInterface({ userId }: GoalChatInterfaceProps) {
   );
 
   return (
-    <Card className="flex flex-col h-[600px]">
-      <CardHeader className="py-3 px-4 border-b">
-        <CardTitle className="text-lg font-medium">
+    <Card className="flex flex-col h-[80vh] max-h-[800px] min-h-[700px]">
+      <CardHeader className="py-4 px-6 border-b bg-gradient-to-r from-blue-50 to-purple-50">
+        <CardTitle className="text-xl font-bold text-gray-800 flex items-center gap-2">
+          <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
+            <span className="text-white text-sm">🎯</span>
+          </div>
           目標設定アシスタント
         </CardTitle>
+        <p className="text-sm text-gray-600 mt-1">
+          理想のライフスタイルを実現するための目標を一緒に設定しましょう
+        </p>
       </CardHeader>
       <CardContent className="flex-1 overflow-hidden p-0 flex flex-col">
-        <ScrollArea className="flex-1 p-4">
-          <div className="space-y-4">
+        <ScrollArea className="flex-1 p-6">
+          <div className="space-y-6">
             {messages.map((message) => (
               <ChatMessage
                 key={message.id}
@@ -171,12 +177,20 @@ export function GoalChatInterface({ userId }: GoalChatInterfaceProps) {
             <div ref={messagesEndRef} />
           </div>
         </ScrollArea>
-        <div className="p-4 border-t">
+        <div className="p-6 border-t bg-gray-50">
           <ChatInput
             onSendMessage={handleSendMessage}
             isLoading={isLoading}
-            isWaitingForConfirmation={isWaitingForConfirmation}
+            isWaitingForConfirmation={false}
           />
+          {isWaitingForConfirmation && (
+            <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <p className="text-sm text-blue-700 font-medium">
+                ✨
+                上記の内容を確認し、OKボタンを押してください。修正がある場合は、この欄にメッセージを入力してください。
+              </p>
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>
