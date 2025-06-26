@@ -51,8 +51,16 @@ export async function middleware(req: NextRequest) {
       }
     );
 
-    // セッション情報を取得
-    const { data } = await supabase.auth.getSession();
+    // タイムアウト付きでセッション情報を取得
+    const sessionPromise = supabase.auth.getSession();
+    const timeoutPromise = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error("Session timeout")), 5000)
+    );
+
+    const { data } = (await Promise.race([
+      sessionPromise,
+      timeoutPromise,
+    ])) as any;
     const session = data?.session;
 
     console.log("認証状態:", session ? "認証済み" : "未認証");
@@ -77,6 +85,15 @@ export async function middleware(req: NextRequest) {
     return res;
   } catch (error) {
     console.error("ミドルウェアエラー:", error);
+
+    // タイムアウトエラーの場合は、セッション無しとして処理を続行
+    if (error instanceof Error && error.message === "Session timeout") {
+      console.log("セッション取得タイムアウト - 未認証として処理");
+      if (!isPublicPath) {
+        return NextResponse.redirect(new URL("/login", req.url));
+      }
+      return res;
+    }
 
     // エラーが発生した場合で保護されたページにアクセスしようとしている場合はログインページへリダイレクト
     if (!isPublicPath) {

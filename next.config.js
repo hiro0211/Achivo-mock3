@@ -4,6 +4,24 @@ const nextConfig = {
     ignoreDuringBuilds: true,
   },
   images: { unoptimized: true },
+  experimental: {
+    // ミドルウェアのタイムアウト設定
+    serverComponentsExternalPackages: ["@supabase/supabase-js"],
+  },
+  // Vercel関数のタイムアウト設定
+  async headers() {
+    return [
+      {
+        source: "/api/:path*",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "no-store, no-cache, must-revalidate, proxy-revalidate",
+          },
+        ],
+      },
+    ];
+  },
 };
 
 module.exports = nextConfig;

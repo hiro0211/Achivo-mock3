@@ -1,0 +1,9 @@
+{
+  "functions": {
+    "app/api/**": {
+      "maxDuration": 30
+    }
+  },
+  "regions": ["nrt1"],
+  "crons": []
+}
