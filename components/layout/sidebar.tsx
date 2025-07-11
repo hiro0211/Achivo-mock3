@@ -10,14 +10,21 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import dynamic from "next/dynamic";
 
-const LucideIcon = dynamic(() =>
-  import("lucide-react").then((mod) => {
-    const icons = mod as any;
-    return ({ name, ...props }: { name: string;[key: string]: any }) => {
-      const Icon = icons[name];
-      return Icon ? <Icon {...props} /> : null;
-    };
-  }),
+interface LucideIconProps {
+  name: string;
+  className?: string;
+  size?: number;
+}
+
+const LucideIcon = dynamic(
+  () =>
+    import("lucide-react").then((mod) => {
+      const { ...icons } = mod;
+      return ({ name, ...props }: LucideIconProps) => {
+        const Icon = icons[name];
+        return Icon ? <Icon {...props} /> : null;
+      };
+    }),
   { ssr: false }
 );
 
@@ -35,7 +42,9 @@ export function Sidebar() {
       <div className="p-4 flex items-center justify-between h-14 border-b">
         {!collapsed && (
           <Link href="/dashboard" className="flex items-center">
-            <span className="font-bold text-xl tracking-tight text-primary">Achivo</span>
+            <span className="font-bold text-xl tracking-tight text-primary">
+              Achivo
+            </span>
           </Link>
         )}
         <Button
@@ -57,7 +66,8 @@ export function Sidebar() {
                   className={cn(
                     "flex items-center py-2 px-3 rounded-md transition-colors",
                     "hover:bg-accent hover:text-accent-foreground",
-                    pathname === item.href && "bg-accent text-accent-foreground font-medium",
+                    pathname === item.href &&
+                      "bg-accent text-accent-foreground font-medium",
                     collapsed ? "justify-center" : "justify-start"
                   )}
                 >
@@ -71,9 +81,14 @@ export function Sidebar() {
       </nav>
 
       <div className="p-4 border-t mt-auto">
-        <div className={cn("flex items-center", collapsed ? "justify-center" : "")}>
+        <div
+          className={cn("flex items-center", collapsed ? "justify-center" : "")}
+        >
           <Avatar className="h-8 w-8">
-            <AvatarImage src="https://github.com/shadcn.png" alt="User avatar" />
+            <AvatarImage
+              src="https://github.com/shadcn.png"
+              alt="User avatar"
+            />
             <AvatarFallback>JD</AvatarFallback>
           </Avatar>
           {!collapsed && (

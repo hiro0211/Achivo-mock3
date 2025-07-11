@@ -1,136 +1,333 @@
-# Achivo - 目標達成サポートアプリ
+# Achivo - AI 目標達成ダッシュボード
 
-Next.js 製の目標達成・自己管理サポート Web アプリケーション。AI との対話で目標設定、進捗管理、タスク管理機能を提供します。
+## 📋 プロジェクト概要
 
-## 技術スタック
+Achivo は AI を活用して目標達成をサポートするダッシュボードアプリケーションです。ユーザーは理想のライフスタイルを入力し、AI が自動的に目標とタスクを生成・管理します。
 
-- **フレームワーク**: Next.js 15.3.1
+## 🛠️ 技術スタック
+
+- **フレームワーク**: Next.js 15 (App Router)
 - **言語**: TypeScript
 - **スタイリング**: Tailwind CSS
-- **認証・データベース**: Supabase
 - **UI コンポーネント**: Radix UI
-- **アイコン**: Lucide React
-- **グラフ**: Recharts
-- **AI**: Dify API
+- **データベース・認証**: Supabase
+- **AI 機能**: Dify API
+- **状態管理**: React Hooks
+- **フォーム管理**: React Hook Form + Zod
 
-## 環境変数の設定
+## 📁 プロジェクト構造
 
-### 必要な環境変数
+### 🗂️ ルートディレクトリ
 
-`.env.local`ファイルを作成し、以下の環境変数を設定してください：
-
-```env
-# Supabase
-NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
-SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
-
-# Dify API
-DIFY_API_KEY=your_dify_api_key
+```
+Achivo-mock3/
+├── app/                    # Next.js App Router のメインディレクトリ
+├── components/             # 再利用可能なコンポーネント
+├── constants/              # 定数・設定ファイル
+├── hooks/                  # カスタムフック
+├── lib/                    # ライブラリ・ユーティリティ
+├── types/                  # TypeScript 型定義
+├── middleware.ts           # Next.js ミドルウェア（認証）
+├── next.config.js          # Next.js 設定
+├── package.json            # 依存関係・スクリプト
+├── tailwind.config.ts      # Tailwind CSS 設定
+├── tsconfig.json           # TypeScript 設定
+└── vercel.json             # Vercel デプロイ設定
 ```
 
-### Vercel デプロイ時の環境変数
+---
 
-Vercel にデプロイする際は、以下の環境変数を Vercel の管理画面で設定してください：
+## 📂 詳細なフォルダー・ファイル構造
 
-1. `NEXT_PUBLIC_SUPABASE_URL`
-2. `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-3. `SUPABASE_SERVICE_ROLE_KEY`
-4. `DIFY_API_KEY`
+### 🔹 `/app` - Next.js App Router
 
-**注意**: `VERCEL_URL`は自動的に設定されるため、手動で設定する必要はありません。
+Next.js の App Router を使用したページと API 定義
 
-## 開発環境のセットアップ
+```
+app/
+├── layout.tsx              # ルートレイアウト（共通UI・プロバイダー）
+├── page.tsx                # ホームページ（ダッシュボードにリダイレクト）
+├── globals.css             # グローバルスタイル
+├── components/
+│   └── SupabaseProvider.tsx # Supabase認証プロバイダー
+├── api/                    # API Routes
+│   ├── auth/
+│   │   ├── callback/
+│   │   │   └── route.ts    # OAuth認証コールバック
+│   │   └── logout/
+│   │       └── route.ts    # ログアウト処理
+│   ├── goal-chat/
+│   │   └── route.ts        # AI目標チャット API
+│   └── health/
+│       └── route.ts        # ヘルスチェック API
+├── dashboard/
+│   └── page.tsx            # ダッシュボードページ（メイン画面）
+├── goals/
+│   └── page.tsx            # 目標一覧ページ
+├── tasks/
+│   └── page.tsx            # タスク一覧ページ
+├── progress/
+│   └── page.tsx            # 進捗確認ページ
+├── login/
+│   ├── page.tsx            # ログインページ
+│   └── components/
+│       └── LoginForm.tsx   # ログインフォーム
+├── signup/
+│   ├── page.tsx            # サインアップページ
+│   └── components/
+│       └── SignupForm.tsx  # サインアップフォーム
+└── verification/
+    └── page.tsx            # メール認証ページ
+```
 
-1. **依存関係のインストール**
+### 🔹 `/components` - 再利用可能コンポーネント
+
+機能別に分類された React コンポーネント
+
+```
+components/
+├── dashboard/              # ダッシュボード関連
+│   ├── goal-chat-interface.tsx  # AI目標チャット画面
+│   ├── chat-input.tsx           # チャット入力フォーム
+│   ├── chat-message.tsx         # チャットメッセージ表示
+│   ├── chat-panel.tsx           # チャットパネル
+│   ├── summary-card.tsx         # サマリーカード
+│   └── summary-stack.tsx        # サマリースタック
+├── goals/                  # 目標関連
+│   ├── goal-card.tsx       # 目標カード
+│   └── goals-grid.tsx      # 目標グリッド表示
+├── tasks/                  # タスク関連
+│   ├── task-item.tsx       # タスクアイテム
+│   └── task-list.tsx       # タスクリスト
+├── progress/               # 進捗関連
+│   ├── kpi-card.tsx        # KPI カード
+│   ├── kpi-grid.tsx        # KPI グリッド
+│   ├── progress-chart.tsx  # 進捗チャート
+│   └── progress-ring.tsx   # 進捗リング
+├── layout/                 # レイアウト関連
+│   ├── header.tsx          # ヘッダー
+│   ├── sidebar.tsx         # サイドバー
+│   └── theme-toggle.tsx    # テーマ切り替え
+├── providers/              # プロバイダー
+│   └── theme-provider.tsx  # テーマプロバイダー
+└── ui/                     # 基本UIコンポーネント
+    ├── avatar.tsx          # アバター
+    ├── badge.tsx           # バッジ
+    ├── button.tsx          # ボタン
+    ├── calendar.tsx        # カレンダー
+    ├── card.tsx            # カード
+    ├── chart.tsx           # チャート
+    ├── checkbox.tsx        # チェックボックス
+    ├── input.tsx           # インプット
+    ├── label.tsx           # ラベル
+    ├── progress.tsx        # プログレスバー
+    ├── scroll-area.tsx     # スクロールエリア
+    ├── select.tsx          # セレクト
+    ├── separator.tsx       # セパレーター
+    ├── textarea.tsx        # テキストエリア
+    ├── toast.tsx           # トースト
+    └── toaster.tsx         # トースター
+```
+
+### 🔹 `/constants` - 定数・設定
+
+```
+constants/
+├── navigation.ts           # ナビゲーション定義
+└── mock-data.ts           # モックデータ
+```
+
+### 🔹 `/hooks` - カスタムフック
+
+```
+hooks/
+├── use-goals.ts           # 目標管理フック
+├── use-tasks.ts           # タスク管理フック
+├── use-theme.ts           # テーマ管理フック
+└── use-toast.ts           # トースト管理フック
+```
+
+### 🔹 `/lib` - ライブラリ・ユーティリティ
+
+```
+lib/
+├── api/
+│   └── notification.ts     # 通知API
+├── auth-utils.tsx          # 認証ユーティリティ
+├── supabase-server.ts      # Supabaseサーバークライアント
+├── utils.ts                # 汎用ユーティリティ
+├── hooks/
+│   └── use-auth.ts         # 認証フック
+├── interfaces/             # インターフェース定義
+├── repositories/           # データアクセス層
+│   ├── goal-repository.ts      # 目標データアクセス
+│   ├── goal-server-repository.ts # 目標サーバーデータアクセス
+│   └── task-repository.ts      # タスクデータアクセス
+├── services/               # サービス層
+│   ├── dify-service.ts     # Dify AI サービス
+│   └── goal-service.ts     # 目標サービス
+├── supabase/
+│   └── browser-client.ts   # Supabaseブラウザクライアント
+└── utils/
+    ├── error-handler.ts    # エラーハンドリング
+    └── url.ts              # URL ユーティリティ
+```
+
+### 🔹 `/types` - TypeScript 型定義
+
+```
+types/
+├── index.ts                # 基本型定義
+│   ├── User                # ユーザー型
+│   ├── Goal                # 目標型
+│   ├── Task                # タスク型
+│   ├── Message             # メッセージ型
+│   ├── ProgressData        # 進捗データ型
+│   ├── KPI                 # KPI型
+│   ├── NavItem             # ナビゲーションアイテム型
+│   ├── DifyInput           # Dify入力型
+│   └── SummaryCard         # サマリーカード型
+└── goal-data.ts            # 目標データ型
+```
+
+---
+
+## 🔧 設定ファイル
+
+### 🔹 認証・セキュリティ
+
+| ファイル                         | 役割                                 |
+| -------------------------------- | ------------------------------------ |
+| `middleware.ts`                  | 認証ミドルウェア・ページアクセス制御 |
+| `lib/supabase/browser-client.ts` | Supabase クライアント設定            |
+| `lib/supabase-server.ts`         | Supabase サーバー設定                |
+
+### 🔹 開発・ビルド設定
+
+| ファイル             | 役割              |
+| -------------------- | ----------------- |
+| `next.config.js`     | Next.js 設定      |
+| `tailwind.config.ts` | Tailwind CSS 設定 |
+| `tsconfig.json`      | TypeScript 設定   |
+| `postcss.config.js`  | PostCSS 設定      |
+| `components.json`    | Radix UI 設定     |
+
+### 🔹 デプロイ・環境設定
+
+| ファイル           | 役割                     |
+| ------------------ | ------------------------ |
+| `vercel.json`      | Vercel デプロイ設定      |
+| `sample.env.local` | 環境変数サンプル         |
+| `package.json`     | 依存関係・スクリプト定義 |
+
+---
+
+## 🚀 主要機能
+
+### 1. **AI 目標設定チャット**
+
+- **場所**: `components/dashboard/goal-chat-interface.tsx`
+- **機能**: ユーザーの理想を聞いて目標を自動生成
+- **AI**: Dify API 連携
+
+### 2. **認証システム**
+
+- **場所**: `app/login/`, `app/signup/`
+- **機能**: Supabase 認証（OAuth 対応）
+- **保護**: ミドルウェアによるページアクセス制御
+
+### 3. **目標・タスク管理**
+
+- **場所**: `app/goals/`, `app/tasks/`
+- **機能**: CRUD 操作、進捗追跡
+- **データ**: Supabase データベース
+
+### 4. **進捗可視化**
+
+- **場所**: `app/progress/`
+- **機能**: チャート・KPI 表示
+- **ライブラリ**: Recharts
+
+---
+
+## 🔌 外部サービス連携
+
+### **Supabase**
+
+- **認証**: OAuth、メール認証
+- **データベース**: PostgreSQL
+- **設定**: `lib/supabase/`
+
+### **Dify AI**
+
+- **機能**: 自然言語処理、目標生成
+- **設定**: `lib/services/dify-service.ts`
+- **API**: REST API
+
+---
+
+## 📦 依存関係
+
+### **主要依存関係**
+
+```json
+{
+  "next": "^15.3.1",
+  "react": "18.2.0",
+  "typescript": "5.2.2",
+  "@supabase/supabase-js": "^2.49.4",
+  "@radix-ui/react-*": "最新版",
+  "tailwindcss": "3.3.3",
+  "recharts": "^2.12.7"
+}
+```
+
+### **開発依存関係**
+
+- TypeScript 型定義
+- ESLint 設定
+- Tailwind CSS
+
+---
+
+## 🎨 UI コンポーネント
+
+**Radix UI**ベースのコンポーネントライブラリを使用：
+
+- アクセシビリティ対応
+- テーマ切り替え対応
+- レスポンシブデザイン
+
+---
+
+## 🔒 セキュリティ
+
+1. **認証**: Supabase 認証
+2. **アクセス制御**: Next.js Middleware
+3. **データ保護**: Row Level Security (RLS)
+4. **API 保護**: サーバーサイド検証
+
+---
+
+## 🚀 開発開始
 
 ```bash
+# 依存関係インストール
 npm install
-```
 
-2. **環境変数の設定**
-
-```bash
+# 環境変数設定
 cp sample.env.local .env.local
-# .env.localファイルを編集して実際の値を設定
-```
 
-3. **開発サーバーの起動**
-
-```bash
+# 開発サーバー起動
 npm run dev
 ```
 
-## ビルドとデプロイ
+---
 
-### ローカルビルド
+## 📝 開発メモ
 
-```bash
-npm run build
-npm start
-```
-
-### Vercel デプロイ
-
-1. **Vercel CLI でデプロイ**
-
-```bash
-npx vercel
-```
-
-2. **GitHub と連携してデプロイ**
-   - GitHub リポジトリを Vercel に接続
-   - 環境変数を設定
-   - 自動デプロイが実行される
-
-### デプロイ時の注意点
-
-- **環境変数**: 本番環境用の環境変数を必ず設定してください
-- **ドメイン設定**: カスタムドメインを使用する場合は、`lib/utils/url.ts`の`getBaseUrl()`関数を更新してください
-- **CORS 設定**: Supabase の設定で Vercel ドメインを許可してください
-
-## プロジェクト構造
-
-```
-├── app/                    # Next.js App Router
-│   ├── api/               # API Routes
-│   ├── components/        # 共通コンポーネント
-│   ├── dashboard/         # ダッシュボードページ
-│   ├── login/            # ログインページ
-│   └── signup/           # サインアップページ
-├── components/            # UIコンポーネント
-│   ├── ui/               # 基本UIコンポーネント
-│   ├── dashboard/        # ダッシュボード専用コンポーネント
-│   └── layout/           # レイアウトコンポーネント
-├── lib/                  # ユーティリティとサービス
-│   ├── services/         # 外部サービス連携
-│   ├── repositories/     # データアクセス層
-│   └── utils/           # ヘルパー関数
-└── types/               # TypeScript型定義
-```
-
-## 主な機能
-
-- **ユーザー認証**: Supabase Auth（メール/パスワード、Google OAuth）
-- **目標設定**: AI との対話による目標設定
-- **進捗管理**: 目標の進捗状況を可視化
-- **タスク管理**: 日次・週次・月次タスクの管理
-- **ダッシュボード**: 統合的な進捗表示
-
-## トラブルシューティング
-
-### localhost 接続エラー
-
-デプロイ後に「localhost 接続拒否」エラーが発生する場合：
-
-1. 環境変数が正しく設定されているか確認
-2. Supabase の設定で Vercel ドメインが許可されているか確認
-3. `lib/utils/url.ts`の`getBaseUrl()`関数が適切に設定されているか確認
-
-### ビルドエラー
-
-```bash
-npm run build
-```
-
-でエラーが発生する場合は、TypeScript の型エラーや ESLint エラーを確認してください。
+- **App Router**: Next.js 15 の新しいルーティング
+- **TypeScript**: 型安全な開発
+- **コンポーネント**: 再利用可能な設計
+- **状態管理**: React Hooks ベース
+- **スタイリング**: Tailwind CSS + Radix UI

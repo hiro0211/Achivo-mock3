@@ -5,7 +5,7 @@ export async function middleware(req: NextRequest) {
   const res = NextResponse.next();
   const path = req.nextUrl.pathname;
 
-  console.log("Middleware実行:", path);
+  // middleware実行ログは開発環境でのみ出力
 
   // パブリックパス (認証が不要なパス)
   const isPublicPath =
@@ -17,7 +17,7 @@ export async function middleware(req: NextRequest) {
 
   // APIルートやコールバックパスの場合は処理をスキップ
   if (path.startsWith("/api/")) {
-    console.log("APIルートなのでスキップ:", path);
+    // APIルートログは開発環境でのみ出力
     return res;
   }
 
@@ -57,38 +57,30 @@ export async function middleware(req: NextRequest) {
       setTimeout(() => reject(new Error("Session timeout")), 5000)
     );
 
-    const { data } = (await Promise.race([
-      sessionPromise,
-      timeoutPromise,
-    ])) as any;
+    const result = await Promise.race([sessionPromise, timeoutPromise]);
+    const { data } = result as { data: { session: any } };
     const session = data?.session;
 
-    console.log("認証状態:", session ? "認証済み" : "未認証");
+    // 開発環境でのみ認証状態をログ出力
 
     // 認証済みユーザーがログイン/サインアップページにアクセスした場合はダッシュボードにリダイレクト
     if (isPublicPath && session) {
-      console.log(
-        "認証済みユーザーがパブリックページにアクセス - ダッシュボードへリダイレクト"
-      );
       return NextResponse.redirect(new URL("/dashboard", req.url));
     }
 
     // 未認証ユーザーが保護されたルートにアクセスした場合はログインページにリダイレクト
     if (!isPublicPath && !session) {
-      console.log(
-        "未認証ユーザーが保護ページにアクセス - ログインへリダイレクト"
-      );
       return NextResponse.redirect(new URL("/login", req.url));
     }
-
-    console.log("通常のページアクセス - そのまま表示");
     return res;
   } catch (error) {
-    console.error("ミドルウェアエラー:", error);
+    // エラーは開発環境でのみログ出力
+    if (process.env.NODE_ENV === "development") {
+      console.error("ミドルウェアエラー:", error);
+    }
 
     // タイムアウトエラーの場合は、セッション無しとして処理を続行
     if (error instanceof Error && error.message === "Session timeout") {
-      console.log("セッション取得タイムアウト - 未認証として処理");
       if (!isPublicPath) {
         return NextResponse.redirect(new URL("/login", req.url));
       }
@@ -97,7 +89,6 @@ export async function middleware(req: NextRequest) {
 
     // エラーが発生した場合で保護されたページにアクセスしようとしている場合はログインページへリダイレクト
     if (!isPublicPath) {
-      console.log("エラー発生時の保護ページアクセス - ログインへリダイレクト");
       return NextResponse.redirect(
         new URL("/login?error=auth_middleware", req.url)
       );

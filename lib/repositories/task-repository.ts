@@ -1,8 +1,6 @@
 import { Task } from "@/types";
-import {
-  getBrowserSupabaseClient,
-  refreshToken,
-} from "@/lib/supabase/browser-client";
+import { getBrowserSupabaseClient } from "@/lib/supabase/browser-client";
+import { executeWithRetry } from "../utils/error-handler";
 
 // Supabaseテーブルの型定義
 interface TodoRow {
@@ -14,46 +12,6 @@ interface TodoRow {
   deadline: string | null;
   created_at: string;
   updated_at: string;
-}
-
-/**
- * トークンエラーかどうかをチェック
- */
-function isTokenError(error: any): boolean {
-  return (
-    error?.message?.includes("JWT expired") ||
-    error?.message?.includes("invalid_token") ||
-    error?.code === "invalid_token" ||
-    error?.status === 401
-  );
-}
-
-/**
- * リトライ付きでSupabaseクエリを実行
- */
-async function executeWithRetry<T>(
-  queryFn: () => Promise<{ data: T | null; error: any | null }>,
-  description: string
-): Promise<{ data: T | null; error: any | null }> {
-  let result = await queryFn();
-
-  // トークンエラーの場合、リフレッシュを試行して再実行
-  if (result.error && isTokenError(result.error)) {
-    console.log(
-      `${description}でトークンエラーが発生、リフレッシュを試行:`,
-      result.error
-    );
-
-    const refreshSuccess = await refreshToken();
-    if (refreshSuccess) {
-      console.log(`トークンリフレッシュ成功、${description}を再実行`);
-      result = await queryFn();
-    } else {
-      console.error(`トークンリフレッシュ失敗、${description}のリトライを断念`);
-    }
-  }
-
-  return result;
 }
 
 /**
@@ -84,8 +42,6 @@ export class TaskRepository {
    */
   async getUserTasks(userId: string): Promise<Task[]> {
     try {
-      console.log("タスクデータ取得開始:", { userId });
-
       const supabase = getBrowserSupabaseClient();
 
       const { data: todos, error } = await executeWithRetry<TodoRow[]>(
@@ -98,22 +54,12 @@ export class TaskRepository {
         "タスク一覧取得"
       );
 
-      if (error) {
-        console.error("タスク取得エラー:", error);
+      if (error || !todos || !Array.isArray(todos)) {
         return [];
       }
 
-      if (!todos || !Array.isArray(todos)) {
-        console.log("タスクデータが見つかりません");
-        return [];
-      }
-
-      const tasks = todos.map(mapTodoRowToTask);
-      console.log("タスクデータ取得成功:", { taskCount: tasks.length });
-
-      return tasks;
+      return todos.map(mapTodoRowToTask);
     } catch (error) {
-      console.error("タスクデータ取得中にエラーが発生:", error);
       return [];
     }
   }
@@ -126,46 +72,31 @@ export class TaskRepository {
     completed: boolean
   ): Promise<boolean> {
     try {
-      console.log("タスク完了状態更新開始:", { taskId, completed });
-
       const supabase = getBrowserSupabaseClient();
 
-      const { error } = await executeWithRetry<null>(
+      const { error } = await executeWithRetry(
         async () =>
           await supabase
             .from("TODOS")
             .update({
-              is_completed: completed,
+              completed,
               updated_at: new Date().toISOString(),
             })
             .eq("id", taskId),
         "タスク完了状態更新"
       );
 
-      if (error) {
-        console.error("タスク更新エラー:", error);
-        return false;
-      }
-
-      console.log("タスク完了状態更新成功");
-      return true;
+      return !error;
     } catch (error) {
-      console.error("タスク更新中にエラーが発生:", error);
       return false;
     }
   }
 }
 
-export const taskRepository = new TaskRepository();
+// インスタンス化されたリポジトリをエクスポート
+const taskRepository = new TaskRepository();
 
-// 後方互換性のための関数エクスポート
-export async function getUserTasks(userId: string): Promise<Task[]> {
-  return taskRepository.getUserTasks(userId);
-}
-
-export async function updateTaskCompletion(
-  taskId: string,
-  completed: boolean
-): Promise<boolean> {
-  return taskRepository.updateTaskCompletion(taskId, completed);
-}
+export const getUserTasks = (userId: string) =>
+  taskRepository.getUserTasks(userId);
+export const updateTaskCompletion = (taskId: string, completed: boolean) =>
+  taskRepository.updateTaskCompletion(taskId, completed);

@@ -1,4 +1,5 @@
 import { GoalData } from "@/types/goal-data";
+import { executeWithRetry } from "../utils/error-handler";
 
 // データベーステーブルの型定義
 interface LifestyleData {
@@ -30,48 +31,6 @@ interface TodoData {
 }
 
 /**
- * トークンエラーかどうかをチェック
- */
-function isTokenError(error: any): boolean {
-  return (
-    error?.message?.includes("JWT expired") ||
-    error?.message?.includes("invalid_token") ||
-    error?.code === "invalid_token" ||
-    error?.status === 401
-  );
-}
-
-/**
- * リトライ付きでSupabaseクエリを実行
- */
-async function executeWithRetry<T>(
-  queryFn: () => Promise<{ data: T | null; error: any | null }>,
-  description: string
-): Promise<{ data: T | null; error: any | null }> {
-  const { refreshToken } = await import("../supabase/browser-client");
-
-  let result = await queryFn();
-
-  // トークンエラーの場合、リフレッシュを試行して再実行
-  if (result.error && isTokenError(result.error)) {
-    console.log(
-      `${description}でトークンエラーが発生、リフレッシュを試行:`,
-      result.error
-    );
-
-    const refreshSuccess = await refreshToken();
-    if (refreshSuccess) {
-      console.log(`トークンリフレッシュ成功、${description}を再実行`);
-      result = await queryFn();
-    } else {
-      console.error(`トークンリフレッシュ失敗、${description}のリトライを断念`);
-    }
-  }
-
-  return result;
-}
-
-/**
  * クライアントサイド専用の目標データリポジトリ
  */
 export class GoalRepository {
@@ -85,8 +44,6 @@ export class GoalRepository {
     );
 
     try {
-      console.log("目標データ取得開始:", { userId });
-
       const browserSupabase = getBrowserSupabaseClient();
 
       // 1. 理想のライフスタイルを取得
@@ -104,7 +61,6 @@ export class GoalRepository {
         );
 
       if (idealError && idealError.code !== "PGRST116") {
-        console.error("理想のライフスタイル取得エラー:", idealError);
         return null;
       }
 
@@ -123,7 +79,6 @@ export class GoalRepository {
         );
 
       if (quarterError && quarterError.code !== "PGRST116") {
-        console.error("3ヶ月目標取得エラー:", quarterError);
         return null;
       }
 
@@ -141,10 +96,6 @@ export class GoalRepository {
           "1ヶ月目標取得"
         );
 
-      if (monthlyError && monthlyError.code !== "PGRST116") {
-        console.error("1ヶ月目標取得エラー:", monthlyError);
-      }
-
       // 4. 1週間目標を取得
       const { data: weeklyGoal, error: weeklyError } =
         await executeWithRetry<GoalDescriptionData>(
@@ -158,10 +109,6 @@ export class GoalRepository {
               .single(),
           "1週間目標取得"
         );
-
-      if (weeklyError && weeklyError.code !== "PGRST116") {
-        console.error("1週間目標取得エラー:", weeklyError);
-      }
 
       // 5. 制限ルールを取得
       const { data: restrictRule, error: restrictError } =
@@ -230,10 +177,8 @@ export class GoalRepository {
         dailyTasks: dailyTasksText || "日次タスクが設定されていません",
       };
 
-      console.log("目標データ取得成功:", goalData);
       return goalData;
     } catch (error) {
-      console.error("目標データ取得中にエラーが発生:", error);
       return null;
     }
   }
@@ -248,7 +193,6 @@ export class GoalRepository {
     );
 
     try {
-      console.log("目標存在チェック開始:", { userId });
       const browserSupabase = getBrowserSupabaseClient();
 
       const { data, error } = await executeWithRetry<LifestyleData>(
@@ -262,20 +206,8 @@ export class GoalRepository {
         "目標存在チェック"
       );
 
-      console.log("IDEAL_LIFESTYLES取得結果:", {
-        data,
-        error,
-        userId,
-        errorCode: error?.code,
-        errorMessage: error?.message,
-        errorDetails: error?.details,
-      });
-
-      const result = !error && !!data;
-      console.log("目標存在チェック最終結果:", result);
-      return result;
+      return !error && !!data;
     } catch (error) {
-      console.error("目標存在チェック中にエラー:", error);
       return false;
     }
   }
