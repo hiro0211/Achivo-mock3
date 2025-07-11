@@ -19,11 +19,13 @@ interface LucideIconProps {
 const LucideIcon = dynamic(
   () =>
     import("lucide-react").then((mod) => {
-      const { ...icons } = mod;
-      return ({ name, ...props }: LucideIconProps) => {
-        const Icon = icons[name];
+      const Component = ({ name, ...props }: LucideIconProps) => {
+        const Icon = (mod as any)[name];
         return Icon ? <Icon {...props} /> : null;
       };
+
+      Component.displayName = "LucideIcon";
+      return Component;
     }),
   { ssr: false }
 );
